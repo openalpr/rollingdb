@@ -1,0 +1,5 @@
+openalpr-rollingdb (2.0.1-20170717190213) unstable; urgency=low
+
+  * Initial release
+
+ -- Matthew Hill <matthill@openalpr.com>  Mon, 17 Jul 2017 19:07:12 -0500

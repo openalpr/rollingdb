@@ -1,0 +1,10 @@
+Format: http://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: openalpr-alprneural
+Source: https://github.com/openalpr/openalpr
+
+Files: *
+Copyright: 2013-2017 Matt Hill <matthill@openalpr.com>
+License: Commercial
+  This program is licensed under a commercial license from 
+  OpenALPR Technology, Inc.  Use of this program is prohibited
+  unless a commercial license is purchased.
