@@ -34,6 +34,20 @@ TARGET_LINK_LIBRARIES(rollingdb
     ${log4cplus_LIBRARIES}
 )
 
+  
+# Tests
+ADD_EXECUTABLE( rdb_write  
+  rdb_write.cpp 
+)
+TARGET_LINK_LIBRARIES(rdb_write
+    rollingdb
+)
+ADD_EXECUTABLE( rdb_read 
+  rdb_read.cpp 
+)
+TARGET_LINK_LIBRARIES(rdb_read
+    rollingdb
+)
 
 set_target_properties(rollingdb PROPERTIES SOVERSION 2)
 
