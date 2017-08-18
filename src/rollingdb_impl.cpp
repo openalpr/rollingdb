@@ -27,15 +27,10 @@ void directoryWatchThread(void* arg);
   
 bool imgCompare( const LmdbEntry &leftImage, const LmdbEntry &rightImage );
 
-RollingDBImpl::RollingDBImpl(std::string chunk_directory, int max_size_gb, int jpeg_quality, log4cplus::Logger logger, bool read_only)
+RollingDBImpl::RollingDBImpl(std::string chunk_directory, int max_size_gb, log4cplus::Logger logger, bool read_only)
 {
   this->logger = logger;
   this->readonly = read_only;
-  
-  if (jpeg_quality > 0 && jpeg_quality <= 100)
-    this->jpeg_quality = jpeg_quality;
-  else
-    this->jpeg_quality = 85;
   
   const float MEGABYTES_IN_A_GB = 1024;
   int max_num_chunks = (((float) max_size_gb) * MEGABYTES_IN_A_GB) / MEGABYTES_PER_LMDB_CHUNK;

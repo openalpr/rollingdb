@@ -7,12 +7,10 @@ SET(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake_modules/")
 
 option(BUILD_TESTS "Use CUDA support" OFF)
 
-FIND_PACKAGE( AlprOpenCV REQUIRED )
 FIND_PACKAGE( AlprSupport REQUIRED )
 FIND_PACKAGE( log4cplus REQUIRED )
 
 include_directories(
-  ${OpenCV_INCLUDE_DIRS}
   ${AlprSupport_INCLUDE_DIR}
   ${CMAKE_SOURCE_DIR}/src
 )
@@ -27,7 +25,6 @@ add_library(rollingdb 	SHARED
 
 TARGET_LINK_LIBRARIES(rollingdb
     lmdb
-    ${OpenCV_LIBS}
     ${AlprSupport_LIBRARIES}
     ${log4cplus_LIBRARIES}
 )

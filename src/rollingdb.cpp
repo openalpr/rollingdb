@@ -28,16 +28,11 @@ RollingDB::~RollingDB() {
 
 
 
-bool RollingDB::read_image(std::string name, cv::Mat& output_image) {
-  return impl->read_image(name, output_image);
-}
 
 bool RollingDB::read_image(std::string name, std::vector<unsigned char>& image_bytes) {
   return impl->read_image(name, image_bytes);
 }
 
-void RollingDB::write_image(std::string name, cv::Mat image) {
-  impl->write_image(name, image);
 }
 
 void RollingDB::reload_from_disk() {

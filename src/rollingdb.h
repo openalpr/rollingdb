@@ -10,7 +10,6 @@
 
 
 #include <string>
-#include <opencv2/opencv.hpp>
 
 #include <log4cplus/logger.h>
 
@@ -21,10 +20,8 @@ public:
   RollingDB(std::string chunk_directory, int max_size_gb, int jpeg_quality, log4cplus::Logger logger, bool read_only = false);
   virtual ~RollingDB();
   
-  void write_image(std::string name, cv::Mat image);
   void write_image(std::string name, std::vector<uchar>& image_bytes);
   
-  bool read_image(std::string name, cv::Mat& output_image);
   bool read_image(std::string name, std::vector<uchar>& image_bytes);
   
   bool active;

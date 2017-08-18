@@ -17,7 +17,6 @@
 #include <string>
 #include <queue>
 
-#include <opencv2/opencv.hpp>
 
 #include <alprsupport/tinythread.h>
 #include "lmdb.h"
