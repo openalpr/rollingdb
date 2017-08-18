@@ -1,6 +1,9 @@
 rollingdb
 ==============
 
+Overview
+---------
+
 This is a time-based rolling object database.  The purpose of the database is to store binary objects
 over time and automatically delete the oldest records when the maximum file size is reached.
 
@@ -37,6 +40,7 @@ Request for image site-id-epoch_time.jpg
 
 
 Compile Instructions (Linux):
+------------------------------
 
   - sudo apt-get update && sudo apt-get install libre2-dev libtclap-dev liblmdb-dev
   - mkdir build
@@ -44,6 +48,7 @@ Compile Instructions (Linux):
   - make 
 
 Test program (rdb_write, rdb_read):
+------------------------------------
 
   The test programs demonstrate the use of the library.  You can add or retrieve binary data by key.
 
@@ -53,7 +58,15 @@ Test program (rdb_write, rdb_read):
   maximum total file size has been achieved, the database will delete the oldest files (by epoch time).
 
   For example, to write and read a file:
+  
+  ```
+  ./rdb_write ./librollingdb.so.2
+  ./rdb_read -o /tmp/testout ./librollingdb.so.2-1503072730590
+  ```
 
     
 
-License: LGPL
+License:
+---------
+
+RollingDB is licensed under the terms of the GNU Lesser GPL (LGPL)
