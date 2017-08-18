@@ -1,8 +1,8 @@
 /* 
- * File:   chunkcollection.h
- * Author: mhill
- *
- * Created on April 1, 2016, 11:10 AM
+ * Copyright 2017, OpenALPR Technology, Inc.  
+ * All rights reserved
+ * This file is part of the RollingDB library
+ * RollingDB is licensed under LGPL
  */
 
 #ifndef OPENALPR_CHUNKCOLLECTION_H

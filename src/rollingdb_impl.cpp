@@ -1,8 +1,8 @@
 /* 
- * File:   RollingDB.cpp
- * Author: mhill
- * 
- * Created on March 31, 2016, 9:37 PM
+ * Copyright 2017, OpenALPR Technology, Inc.  
+ * All rights reserved
+ * This file is part of the RollingDB library
+ * RollingDB is licensed under LGPL
  */
 
 #include "rollingdb_impl.h"

@@ -1,14 +1,8 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
-
 /* 
- * File:   main.cpp
- * Author: mhill
- *
- * Created on August 18, 2017, 10:39 AM
+ * Copyright 2017, OpenALPR Technology, Inc.  
+ * All rights reserved
+ * This file is part of the RollingDB library
+ * RollingDB is licensed under LGPL
  */
 
 #include <cstdlib>

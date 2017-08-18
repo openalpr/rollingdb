@@ -1,14 +1,8 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
-
 /* 
- * File:   rollingdb_impl.h
- * Author: mhill
- *
- * Created on July 22, 2017, 2:44 PM
+ * Copyright 2017, OpenALPR Technology, Inc.  
+ * All rights reserved
+ * This file is part of the RollingDB library
+ * RollingDB is licensed under LGPL
  */
 
 #ifndef ROLLINGDB_IMPL_H
