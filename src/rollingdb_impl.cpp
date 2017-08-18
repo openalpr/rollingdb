@@ -14,6 +14,7 @@
 #ifndef WIN32
 #include <sys/inotify.h>
 #endif
+#include <mutex>
 
 
 using namespace std;
