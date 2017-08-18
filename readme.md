@@ -1,8 +1,11 @@
 rollingdb
 ==============
 
-This is a time-based rolling object database.  The purpose of the database is to store files
+This is a time-based rolling object database.  The purpose of the database is to store binary objects
 over time and automatically delete the oldest records when the maximum file size is reached.
+
+This library is used in the OpenALPR software to store image files, and remove the oldest files once 
+a maximum disk quota is achieved.
 
 Using an LMDB database is more efficient for this purpose especially for a large number of files.  
 When the database reaches 100k+ files, many file systems tend to become very slow when listing and 
@@ -30,3 +33,27 @@ On reads:
 Request for image site-id-epoch_time.jpg
   - Parse the epoch time
   - Look for the last database that has an epoch time before the image.  open it and read the image.
+
+
+
+Compile Instructions (Linux):
+
+  - sudo apt-get update && sudo apt-get install libre2-dev libtclap-dev liblmdb-dev
+  - mkdir build
+  - cmake ..
+  - make 
+
+Test program (rdb_write, rdb_read):
+
+  The test programs demonstrate the use of the library.  You can add or retrieve binary data by key.
+
+  The format for the keys are: [arbitrary name]-[epoch_time_ms]
+
+  Once you add more data than the current database file can hold, it will create a new database file.  Once the 
+  maximum total file size has been achieved, the database will delete the oldest files (by epoch time).
+
+  For example, to write and read a file:
+
+    
+
+License: LGPL
