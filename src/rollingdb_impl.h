@@ -36,9 +36,11 @@ public:
   RollingDBImpl(std::string chunk_directory, int max_size_gb, log4cplus::Logger logger, bool read_only = false);
   virtual ~RollingDBImpl();
   
-  void write_image(std::string name, std::vector<uchar>& image_bytes);
+  void write_blob(std::string name, uint64_t epoch_time_ms, std::vector<unsigned char>& image_bytes);
   
-  bool read_image(std::string name, std::vector<uchar>& image_bytes);
+  bool read_blob(std::string key, std::vector<unsigned char>& image_bytes);
+  
+  int get_write_buffer_size();
   
   bool active;
   

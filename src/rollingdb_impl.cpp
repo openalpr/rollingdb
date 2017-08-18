@@ -65,15 +65,14 @@ RollingDBImpl::~RollingDBImpl() {
 
 
 
-bool RollingDBImpl::read_image(std::string name, std::vector<unsigned char>& image_bytes) {
+bool RollingDBImpl::read_blob(std::string key, std::vector<unsigned char>& image_bytes) {
 
   timespec startTime, endTime;
   rollingdbsupport::getTimeMonotonic(&startTime);
   int64_t epoch_time = LmdbChunk::parse_lmdb_epoch_time(key);
   if (epoch_time < 0)
     return false;
-  name = alprsupport::filenameWithoutExtension(name);
-    
+      
   // Get the epoch time from the string.  Assume the last set of 30 characters before
   // the end is our epoch time
   LmdbChunk chunk;
@@ -89,7 +88,7 @@ bool RollingDBImpl::read_image(std::string name, std::vector<unsigned char>& ima
   }
   
   
-  ReadStatus status = chunk.read_image(name, image_bytes);
+  ReadStatus status = chunk.read_image(key, image_bytes);
   
   LOG4CPLUS_INFO(logger, "Image Archive: readstatus: " << status);
   if (status != READ_SUCCESS)
@@ -107,7 +106,7 @@ void RollingDBImpl::reload_from_disk() {
   archive_thread_data.chunk_manager->reload();
 }
 
-void RollingDBImpl::write_image(std::string name, std::vector<unsigned char>& image_bytes) {
+void RollingDBImpl::write_blob(std::string name, uint64_t epoch_time_ms, std::vector<unsigned char>& image_bytes) {
   const int MAX_IMAGES_IN_WRITE_BUFFER = 1000;
   
   if (readonly)
@@ -115,21 +114,20 @@ void RollingDBImpl::write_image(std::string name, std::vector<unsigned char>& im
     LOG4CPLUS_ERROR(logger, "Image Archive: Attempting to write to a read-only database");
     return;
   }
-  
-  int64_t epoch_time = LmdbChunk::parse_lmdb_epoch_time(name);
-  
-  if (epoch_time < 0)
+    
+  const uint64_t THE_YEAR_2300 = 10413835200000;
+  if (epoch_time_ms > THE_YEAR_2300)
   {
-    LOG4CPLUS_DEBUG(logger, "Image Archive: Invalid epoch time in file key." << name);
+    LOG4CPLUS_DEBUG(logger, "Image Archive: Invalid epoch time: " << epoch_time_ms);
     return;
   }
   
-  name = alprsupport::filenameWithoutExtension(name);
-  
+  stringstream key;
+  key << name << "-" << epoch_time_ms;
   LmdbEntry entry;
   entry.image_bytes = image_bytes;
-  entry.epoch_time = epoch_time;
-  entry.key = name;
+  entry.epoch_time = epoch_time_ms;
+  entry.key = key.str();
   
   
   // Add to the write queue.  Don't buffer an unlimited amount (we'd run out of memory if the disk is out))
@@ -139,6 +137,10 @@ void RollingDBImpl::write_image(std::string name, std::vector<unsigned char>& im
   else
     LOG4CPLUS_WARN(logger, "Image Archive: Image buffer write overflow. Dropping images from write queue.");
   image_list_mutex.unlock();
+}
+
+int RollingDBImpl::get_write_buffer_size() {
+  return archive_thread_data.image_write_list.size();
 }
 
 void imageWriteThread(void* arg)
