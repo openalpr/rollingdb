@@ -17,7 +17,7 @@
 #include <log4cplus/loggingmacros.h>
 
 #define IMAGE_DB_POSTFIX ".mdb"
-#define IMAGE_DB_SUBDIR "image_db"
+#define IMAGE_DB_SUBDIR "rollingdb_data"
 
 class ChunkCollection {
 public:

@@ -17,7 +17,7 @@
 class RollingDBImpl;
 class RollingDB {
 public:
-  RollingDB(std::string chunk_directory, int max_size_gb, int jpeg_quality, log4cplus::Logger logger, bool read_only = false);
+  RollingDB(std::string chunk_directory, int max_size_gb, log4cplus::Logger logger, bool read_only = false);
   virtual ~RollingDB();
   
   void write_image(std::string name, std::vector<uchar>& image_bytes);

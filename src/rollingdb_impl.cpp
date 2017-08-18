@@ -9,8 +9,7 @@
 
 #include <log4cplus/loggingmacros.h>
 #include <iostream>
-#include <alprsupport/timing.h>
-#include <alprsupport/platform.h>
+#include "system_utils.h"
 #include <set>
 #ifndef WIN32
 #include <sys/inotify.h>
@@ -19,7 +18,7 @@
 
 using namespace std;
 
-tthread::mutex image_list_mutex;
+std::mutex image_list_mutex;
 
 void imageWriteThread(void* arg);
 void directoryWatchThread(void* arg);
@@ -42,9 +41,9 @@ RollingDBImpl::RollingDBImpl(std::string chunk_directory, int max_size_gb, log4c
   archive_thread_data.active = true;
 
   if (!readonly)
-    thread_writeimage = new tthread::thread(imageWriteThread, (void*) &archive_thread_data);
+    thread_writeimage = new std::thread(imageWriteThread, (void*) &archive_thread_data);
   
-  thread_watchdir = new tthread::thread(directoryWatchThread, (void*) &archive_thread_data);
+  thread_watchdir = new std::thread(directoryWatchThread, (void*) &archive_thread_data);
   
 }
 
@@ -64,25 +63,14 @@ RollingDBImpl::~RollingDBImpl() {
 
 
 
-bool RollingDBImpl::read_image(std::string name, cv::Mat& output_image) {
-  vector<unsigned char> image_bytes;
-  
-  bool success = read_image(name, image_bytes);
-  
-  if (success)
-    output_image = cv::imdecode(image_bytes, CV_LOAD_IMAGE_COLOR);
-  
-  return success;
-}
 
 bool RollingDBImpl::read_image(std::string name, std::vector<unsigned char>& image_bytes) {
 
   timespec startTime, endTime;
-  alprsupport::getTimeMonotonic(&startTime);
-  int64_t epoch_time = LmdbChunk::parse_lmdb_epoch_time(name);
+  rollingdbsupport::getTimeMonotonic(&startTime);
+  int64_t epoch_time = LmdbChunk::parse_lmdb_epoch_time(key);
   if (epoch_time < 0)
     return false;
-  
   name = alprsupport::filenameWithoutExtension(name);
     
   // Get the epoch time from the string.  Assume the last set of 30 characters before
@@ -106,25 +94,13 @@ bool RollingDBImpl::read_image(std::string name, std::vector<unsigned char>& ima
   if (status != READ_SUCCESS)
     return false;
   
-  alprsupport::getTimeMonotonic(&endTime);
-  double readTime = alprsupport::diffclock(startTime, endTime);
+  rollingdbsupport::getTimeMonotonic(&endTime);
+  double readTime = rollingdbsupport::diffclock(startTime, endTime);
   
   LOG4CPLUS_DEBUG(logger, "Image Archive: Read took: " << readTime << " ms.");
   return true;
 }
 
-void RollingDBImpl::write_image(std::string name, cv::Mat image) {
-
-  std::vector<unsigned char> img_data;
-
-  std::vector<int> compression_params;
-  compression_params.push_back(CV_IMWRITE_JPEG_QUALITY);
-  compression_params.push_back(jpeg_quality);
-  
-  cv::imencode(".jpg", image, img_data, compression_params);
-  
-  write_image(name, img_data);
-}
 
 void RollingDBImpl::reload_from_disk() {
   archive_thread_data.chunk_manager->reload();
@@ -174,10 +150,10 @@ void imageWriteThread(void* arg)
  
   LOG4CPLUS_DEBUG(tdata->logger, "Starting write thread: " << tdata->active);
   
-  uint64_t last_push = alprsupport::getEpochTimeMs();
+  uint64_t last_push = rollingdbsupport::getEpochTimeMs();
   while (tdata->active)
   {
-    uint64_t now = alprsupport::getEpochTimeMs();
+    uint64_t now = rollingdbsupport::getEpochTimeMs();
 
     if ((now - last_push > MIN_MILLISECONDS_TO_TRIGGER || tdata->image_write_list.size() > MIN_IMAGES_TO_TRIGGER) &&
         (tdata->image_write_list.size() > 0))
@@ -230,12 +206,12 @@ void imageWriteThread(void* arg)
         }
         
         LOG4CPLUS_WARN(tdata->logger, "Image Archive: Write failed, retrying");
-        alprsupport::sleep_ms(500);
+        rollingdbsupport::sleep_ms(500);
       }
 
     }
     
-    alprsupport::sleep_ms(100);
+    rollingdbsupport::sleep_ms(100);
   }
   
   LOG4CPLUS_INFO(tdata->logger, "Image Archive: Exiting write thread: " << tdata->active);
@@ -255,12 +231,12 @@ void directoryWatchThread(void* arg)
   while (tdata->active)
   {
     // Every second poll for directory changes
-    vector<string> files = alprsupport::getFilesInDir(tdata->chunk_manager->chunk_directory.c_str());
+    vector<string> files = rollingdbsupport::getFilesInDir(tdata->chunk_manager->chunk_directory.c_str());
     std::set<std::string> latest_files;
     
     for (uint32_t i = 0; i < files.size(); i++)
     {
-      if (alprsupport::hasEnding(files[i], ".mdb"))
+      if (rollingdbsupport::hasEnding(files[i], ".mdb"))
       {
         latest_files.insert(files[i]);
       }
@@ -296,7 +272,7 @@ void directoryWatchThread(void* arg)
     for (uint32_t i = 0; i < dellist.size(); i++)
       known_files.erase(dellist[i]);
  
-    alprsupport::sleep_ms(1000);
+    rollingdbsupport::sleep_ms(1000);
   }
   #else
   
@@ -333,26 +309,26 @@ void directoryWatchThread(void* arg)
 
   FD_ZERO ( &descriptors );
 
-  int64_t last_fullscan_timestamp = alprsupport::getEpochTimeMs();
+  int64_t last_fullscan_timestamp = rollingdbsupport::getEpochTimeMs();
     
   // Keep looping waiting for the directory to change
   while (tdata->active)
   {
     
       
-    if (alprsupport::getEpochTimeMs() - last_fullscan_timestamp > MIN_MILLISECONDS_BETWEEN_FULLSCAN)
+    if (rollingdbsupport::getEpochTimeMs() - last_fullscan_timestamp > MIN_MILLISECONDS_BETWEEN_FULLSCAN)
     {
       // Do a full scan on the database
-      vector<string> filelist = alprsupport::getFilesInDir(tdata->chunk_manager->chunk_directory.c_str());
+      vector<string> filelist = rollingdbsupport::getFilesInDir(tdata->chunk_manager->chunk_directory.c_str());
       for (uint32_t i = 0; i < filelist.size(); i++)
       {
-        if (alprsupport::hasEndingInsensitive(filelist[i], IMAGE_DB_POSTFIX) == true)
+        if (rollingdbsupport::hasEndingInsensitive(filelist[i], IMAGE_DB_POSTFIX) == true)
         {
           int64_t epoch_time = LmdbChunk::parse_database_epoch_time(filelist[i]);
           tdata->chunk_manager->push_chunk(epoch_time);
         }
       }
-      last_fullscan_timestamp = alprsupport::getEpochTimeMs();
+      last_fullscan_timestamp = rollingdbsupport::getEpochTimeMs();
     }
     
     time_to_wait.tv_sec = 0;
@@ -377,7 +353,7 @@ void directoryWatchThread(void* arg)
       
       // Rest for a moment to allow other ops to take place (e.g., create a file, delete an old file)
       // This way we only do one refresh, rather than multiple.
-      alprsupport::sleep_ms(100);
+      rollingdbsupport::sleep_ms(100);
       
       int i = 0;
       image_list_mutex.lock();
@@ -385,7 +361,7 @@ void directoryWatchThread(void* arg)
         
         struct inotify_event *event = ( struct inotify_event * ) &buffer[ i ];
         if ( event->len ) {
-          if (alprsupport::hasEndingInsensitive(string(event->name), IMAGE_DB_POSTFIX))
+          if (rollingdbsupport::hasEndingInsensitive(string(event->name), IMAGE_DB_POSTFIX))
           {
             int64_t epoch_time = LmdbChunk::parse_database_epoch_time(event->name);
             

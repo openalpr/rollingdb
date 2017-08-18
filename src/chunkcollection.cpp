@@ -6,8 +6,7 @@
  */
 
 #include "chunkcollection.h"
-#include <alprsupport/filesystem.h>
-#include <alprsupport/platform.h>
+#include "system_utils.h"
 #include <sstream>
 #include <algorithm>
 
@@ -24,7 +23,7 @@ ChunkCollection::ChunkCollection(std::string chunk_directory, int max_num_chunks
   this->logger = logger;
   this->readonly = read_only;
   // Clip off the trailing "/" if it exists
-  if (alprsupport::hasEnding(chunk_directory, "/") || alprsupport::hasEnding(chunk_directory, "\\"))
+  if (rollingdbsupport::hasEnding(chunk_directory, "/") || rollingdbsupport::hasEnding(chunk_directory, "\\"))
     chunk_directory = chunk_directory.substr(0, chunk_directory.size() - 1);
   
   std::stringstream ss;
@@ -53,7 +52,7 @@ bool ChunkCollection::delete_database(LmdbChunk chunk_db) {
   //cout << "Deleting: " << chunk_db.db_fullpath << endl;
   LOG4CPLUS_INFO(logger, "Image Archive: Deleting: " << chunk_db.db_fullpath);
   
-  if (alprsupport::fileExists(chunk_db.db_fullpath.c_str()))
+  if (rollingdbsupport::fileExists(chunk_db.db_fullpath.c_str()))
   {
     int success_code = -1;
     int retry_count = 0;
@@ -65,22 +64,22 @@ bool ChunkCollection::delete_database(LmdbChunk chunk_db) {
       
       retry_count++;
       LOG4CPLUS_WARN(logger, "Image Archive: Failed to delete : " << chunk_db.db_fullpath << "... attempt #" << retry_count);
-      alprsupport::sleep_ms(1000);
+      rollingdbsupport::sleep_ms(1000);
     }
   }
-  if (alprsupport::fileExists(chunk_db.lockfile_fullpath.c_str()))
+  if (rollingdbsupport::fileExists(chunk_db.lockfile_fullpath.c_str()))
     remove(chunk_db.lockfile_fullpath.c_str());
 
   // Return true if file is gone
-  return !alprsupport::fileExists(chunk_db.db_fullpath.c_str());
+  return !rollingdbsupport::fileExists(chunk_db.db_fullpath.c_str());
 }
 
 
 void ChunkCollection::reload() {
 
-  if (!alprsupport::DirectoryExists(chunk_directory.c_str()))
+  if (!rollingdbsupport::DirectoryExists(chunk_directory.c_str()))
   {
-    alprsupport::makePath(chunk_directory.c_str(), 0755);
+    rollingdbsupport::makePath(chunk_directory.c_str(), 0755);
   }
   
   std::list<LmdbChunk>::iterator it = chunk_db_files.begin();
@@ -93,11 +92,11 @@ void ChunkCollection::reload() {
   
   chunk_db_files.clear();
   
-  vector<string> all_files = alprsupport::getFilesInDir(chunk_directory.c_str());
+  vector<string> all_files = rollingdbsupport::getFilesInDir(chunk_directory.c_str());
   
   for (size_t i = 0; i < all_files.size(); i++)
   {
-    if (alprsupport::hasEndingInsensitive(all_files[i], IMAGE_DB_POSTFIX))
+    if (rollingdbsupport::hasEndingInsensitive(all_files[i], IMAGE_DB_POSTFIX))
     {
       stringstream ss;
       ss << chunk_directory << "/" << all_files[i];
@@ -286,7 +285,7 @@ void ChunkCollection::push_chunk(uint64_t epoch_time) {
   stringstream ss;
   ss << chunk_directory << "/" << epoch_time << IMAGE_DB_POSTFIX;
   
-  if (!alprsupport::fileExists(ss.str().c_str()))
+  if (!rollingdbsupport::fileExists(ss.str().c_str()))
   {
       LOG4CPLUS_WARN(logger, "Image Archive: Attempting to add non-existent database. ");
       return;

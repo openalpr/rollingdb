@@ -13,9 +13,9 @@
 using namespace std;
 
 
-RollingDB::RollingDB(std::string chunk_directory, int max_size_gb, int jpeg_quality, log4cplus::Logger logger, bool read_only)
+RollingDB::RollingDB(std::string chunk_directory, int max_size_gb, log4cplus::Logger logger, bool read_only)
 {
-  this->impl = new RollingDBImpl(chunk_directory, max_size_gb, jpeg_quality, logger, read_only);
+  this->impl = new RollingDBImpl(chunk_directory, max_size_gb, logger, read_only);
 }
 
 

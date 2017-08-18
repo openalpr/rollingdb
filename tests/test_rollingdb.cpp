@@ -3,7 +3,7 @@
 
 #include "catch.hpp"
 #include "chunkcollection.h"
-#include <alprsupport/filesystem.h>
+#include "system_utils.h"
 #include <string>
 #include <log4cplus/logger.h>
 #include <log4cplus/consoleappender.h>
@@ -12,9 +12,9 @@ using namespace std;
 
 TEST_CASE( "Test Chunk Collection", "[image archive]" ) {
 
-  if (alprsupport::DirectoryExists("/tmp/chunktest/image_db/"))
+  if (rollingdbsupport::DirectoryExists("/tmp/chunktest/image_db/"))
   {
-    std::vector<string> files = alprsupport::getFilesInDir("/tmp/chunktest/image_db/");
+    std::vector<string> files = rollingdbsupport::getFilesInDir("/tmp/chunktest/image_db/");
     for (int i = 0; i < files.size(); i++)
     {
       stringstream ss;

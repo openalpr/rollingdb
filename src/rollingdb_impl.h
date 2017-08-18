@@ -16,9 +16,9 @@
 
 #include <string>
 #include <queue>
+#include <thread>
 
 
-#include <alprsupport/tinythread.h>
 #include "lmdb.h"
 #include "chunkcollection.h"
 
@@ -33,13 +33,11 @@ struct SharedArchiveThreadData
 
 class RollingDBImpl {
 public:
-  RollingDBImpl(std::string chunk_directory, int max_size_gb, int jpeg_quality, log4cplus::Logger logger, bool read_only = false);
+  RollingDBImpl(std::string chunk_directory, int max_size_gb, log4cplus::Logger logger, bool read_only = false);
   virtual ~RollingDBImpl();
   
-  void write_image(std::string name, cv::Mat image);
   void write_image(std::string name, std::vector<uchar>& image_bytes);
   
-  bool read_image(std::string name, cv::Mat& output_image);
   bool read_image(std::string name, std::vector<uchar>& image_bytes);
   
   bool active;
@@ -49,13 +47,12 @@ private:
 
   bool readonly;
   
-  int jpeg_quality;
   
   log4cplus::Logger logger;
   SharedArchiveThreadData archive_thread_data;
   
-  tthread::thread* thread_writeimage;
-  tthread::thread* thread_watchdir;
+  std::thread* thread_writeimage;
+  std::thread* thread_watchdir;
   
 };
 

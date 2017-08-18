@@ -6,11 +6,11 @@
  */
 
 #include "lmdbchunk.h"
-#include <alprsupport/tinythread.h>
-#include <alprsupport/re2.h>
+#include "system_utils.h"
+#include <re2/re2.h>
 
 using namespace std;
-using namespace alprsupport;
+using namespace rollingdbsupport;
 
 
 bool imgCompare( const LmdbEntry &leftImage, const LmdbEntry &rightImage )
@@ -58,8 +58,8 @@ void LmdbChunk::setDbPath(std::string db_path) {
   else
   {
     stringstream sslock;
-    sslock << alprsupport::get_directory_from_path(db_fullpath) << "/" << 
-            alprsupport::filenameWithoutExtension(db_fullpath) << ".mdb-lock";
+    sslock << rollingdbsupport::get_directory_from_path(db_fullpath) << "/" << 
+            rollingdbsupport::filenameWithoutExtension(db_fullpath) << ".mdb-lock";
 
     this->lockfile_fullpath = sslock.str();
 
@@ -102,7 +102,7 @@ bool LmdbChunk::open_env() {
   if (env != NULL)
     return true;
   
-  bool file_already_existed = alprsupport::fileExists(this->db_fullpath.c_str());
+  bool file_already_existed = rollingdbsupport::fileExists(this->db_fullpath.c_str());
   
   int rc;
   rc = mdb_env_create(&env);
@@ -140,17 +140,7 @@ bool LmdbChunk::open_env() {
     env = NULL;
     return false;
   }
-  
-  #ifndef _WIN32 
 
-  if (!file_already_existed)
-  {
-    // This is a new file, set the ownership to openalpr:root
-    bool success = alprsupport::setOwnerOpenalpr(this->db_fullpath.c_str());
-    alprsupport::setOwnerOpenalpr(this->lockfile_fullpath.c_str());
-    LOG4CPLUS_INFO(*logger, "Image Archive assigning lmdb chunk ownership success: " << success);
-  }
-  #endif
 
   return true;
 }
@@ -168,7 +158,7 @@ ReadStatus LmdbChunk::read_image(std::string name, std::vector<unsigned char>& i
   int rc;
   MDB_env *read_env;
           
-  if (!alprsupport::fileExists(db_fullpath.c_str()))
+  if (!rollingdbsupport::fileExists(db_fullpath.c_str()))
     return UNKNOWN_READ_FAILURE;
     
   rc = mdb_env_create(&read_env);
@@ -339,7 +329,6 @@ int64_t LmdbChunk::parse_lmdb_epoch_time(std::string uuid) {
   
   std::string sub_file = uuid.substr(last_index);
   
-  
   re2::RE2 re2_regex("[0-9]{13}");
   
   if (re2::RE2::PartialMatch(sub_file.c_str(), re2_regex))
@@ -355,5 +344,5 @@ int64_t LmdbChunk::parse_lmdb_epoch_time(std::string uuid) {
 
 int64_t LmdbChunk::parse_database_epoch_time(std::string database_file_name) {
   char *pend;
-  return strtoull(alprsupport::filenameWithoutExtension(database_file_name).c_str(), &pend, 10);
+  return strtoull(rollingdbsupport::filenameWithoutExtension(database_file_name).c_str(), &pend, 10);
 }

@@ -7,11 +7,14 @@ SET(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake_modules/")
 
 option(BUILD_TESTS "Use CUDA support" OFF)
 
-FIND_PACKAGE( AlprSupport REQUIRED )
 FIND_PACKAGE( log4cplus REQUIRED )
 
+
+ADD_DEFINITIONS(
+    -std=c++11 
+)
+        
 include_directories(
-  ${AlprSupport_INCLUDE_DIR}
   ${CMAKE_SOURCE_DIR}/src
 )
 
@@ -21,11 +24,13 @@ add_library(rollingdb 	SHARED
     src/rollingdb_impl.cpp 
     src/chunkcollection.cpp 
     src/lmdbchunk.cpp 
+    src/system_utils.cpp
 )
 
 TARGET_LINK_LIBRARIES(rollingdb
     lmdb
-    ${AlprSupport_LIBRARIES}
+    re2
+    pthread
     ${log4cplus_LIBRARIES}
 )
 
