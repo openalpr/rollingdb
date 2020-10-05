@@ -1,4 +1,5 @@
 build/
+.idea/
 package.sh
 upload.sh
 nbproject/
