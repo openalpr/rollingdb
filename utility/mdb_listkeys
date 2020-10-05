@@ -1,16 +1,116 @@
 #!/usr/bin/env python3
 
-from argparse import ArgumentParser
+from argparse import ArgumentParser, ArgumentTypeError
+from collections import defaultdict
+from datetime import datetime
+import json
+import sys
 import lmdb
 
-parser = ArgumentParser(description='List keys contained in an LMDB database')
-parser.add_argument('lmdb_file', type=str, help='Target LMDB file')
-options = parser.parse_args()
 
-lmdb_file = options.lmdb_file
-lmdb_env = lmdb.open(lmdb_file, subdir=False)
-lmdb_txn = lmdb_env.begin()
-lmdb_cursor = lmdb_txn.cursor()
+def parse_ymd(value):
+    try:
+        ts = datetime.strptime(value, '%Y-%m-%d').date()
+    except ValueError:
+        raise ArgumentTypeError(f'{value} does not match format yyyy-mm-dd')
+    return ts
 
-for key, value in lmdb_cursor:
-    print(f'Key: {key.decode()}, Size: {len(value)}')
+
+if __name__ == '__main__':
+
+    parser = ArgumentParser(description='List keys contained in an LMDB database')
+    parser.add_argument('lmdb_file', type=str, help='Target LMDB file')
+    parser.add_argument('-e', '--end_date', type=parse_ymd, help='Latest date to search for')
+    parser.add_argument('-j', '--dump_json', action='store_true', help='Save full metadata for all UUIDs to JSON file')
+    parser.add_argument('-p', '--plate', type=str, help='Plate number to search for (exact match)')
+    parser.add_argument('-s', '--start_date', type=parse_ymd, help='Earliest date to search for')
+    options = parser.parse_args()
+
+    # Validate options
+    if options.plate is not None:
+        if options.plate != options.plate.upper():
+            print('Plate number should not contain lowercase letters')
+            sys.exit(1)
+        if ' ' in options.plate or '-' in options.plate:
+            print('Plate number cannot contain spaces or dashes')
+            sys.exit(1)
+    if options.start_date is not None and options.end_date is not None and options.start_date > options.end_date:
+        print('Start date must be before end date')
+        sys.exit(1)
+
+    # Initialize connection to LMDB
+    # Cannot iterate over a cursor AND access it inside the loop, so we need two
+    lmdb_env = lmdb.open(options.lmdb_file, subdir=False)
+    lmdb_txn = lmdb_env.begin()
+    cursor_iter = lmdb_txn.cursor()
+    cursor_access = lmdb_txn.cursor()
+
+    # Check for keys that match CLI query parameters
+    # Each image UUID should have an associated "meta~" key
+    counts = defaultdict(int)
+    results_by_uuid = defaultdict(list)
+    timestamps = []
+    for key, value in cursor_iter:
+        key_str = key.decode('utf-8')
+        if key_str.startswith('meta~'):
+            continue
+
+        # Add detection results to UUID map
+        # JSON values end with \x00 character that needs to be removed before parsing
+        meta_key = f'meta~{key_str}'.encode('utf-8')
+        meta_value = cursor_access.get(meta_key)
+        if meta_value is None:
+            print(f'WARNING: no metadata associated with {key_str}')
+            continue
+        results = json.loads(meta_value.decode('utf-8')[:-1])
+        results_by_uuid[key_str].append(results)
+        counts['total'] += 1
+
+        # Parse timestamp
+        epoch_ms = int(key_str.split('-')[-1])
+        ts = datetime.fromtimestamp(round(epoch_ms / 1000))
+        ts_date = ts.date()
+        timestamps.append(ts_date)
+
+        # Check plate filter
+        if options.plate is not None and options.plate != results['best_plate_number']:
+            continue
+
+        # Check time constraints
+        if options.start_date is not None and ts_date < options.start_date:
+            counts['early'] += 1
+            continue
+        if options.end_date is not None and ts_date > options.end_date:
+            counts['late'] += 1
+            continue
+
+        # Print keys that match all query parameters
+        print(ts.strftime('%Y-%m-%d %H:%M:%S'), key_str, results['best_plate_number'])
+        counts['match'] += 1
+
+    # Save JSON if requested
+    if options.dump_json:
+        if max(len(v) for v in results_by_uuid.values()) > 1:
+            print('WARNING: multiple meta keys for one or more UUIDs')
+        json.dump(results_by_uuid, open('lmdb.json', 'w'))
+
+    # Print summary of results
+    if len(timestamps) > 0:
+        timestamps = sorted(timestamps)
+        print(f'{counts["total"]:,} total records from {timestamps[0]} to {timestamps[-1]}')
+        if counts['match'] < counts['total']:
+            query_str = f'{counts["match"]:,} matches found'
+            params = []
+            for p in ['start_date', 'end_date', 'plate']:
+                val = getattr(options, p)
+                if val is not None:
+                    params.append(f'{p}: {val}')
+            if len(params) > 0:
+                query_str += f' for query {{{f", ".join(params)}}}'
+            print(query_str)
+            if counts['early'] > 0:
+                print(f'\t- {counts["early"]:,} before {options.start_date}'.expandtabs(2))
+            if counts['late'] > 0:
+                print(f'\t- {counts["late"]:,} after {options.end_date}'.expandtabs(2))
+    else:
+        print('No records found')
