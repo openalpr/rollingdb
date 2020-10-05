@@ -1,22 +1,16 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 
-import lmdb
 from argparse import ArgumentParser
+import lmdb
 
 parser = ArgumentParser(description='List keys contained in an LMDB database')
-
-parser.add_argument(dest="lmdb_file", action="store", 
-                  help="Target LMDB file" )
-
+parser.add_argument('lmdb_file', type=str, help='Target LMDB file')
 options = parser.parse_args()
 
 lmdb_file = options.lmdb_file
-
 lmdb_env = lmdb.open(lmdb_file, subdir=False)
 lmdb_txn = lmdb_env.begin()
 lmdb_cursor = lmdb_txn.cursor()
 
 for key, value in lmdb_cursor:
-
-	print "Key: %s, Size: %d" % (key, len(value))
-
+    print(f'Key: {key.decode()}, Size: {len(value)}')
