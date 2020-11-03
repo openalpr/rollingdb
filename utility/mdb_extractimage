@@ -16,10 +16,10 @@ lmdb_cursor = lmdb_txn.cursor()
 
 found_it = False
 for key, value in lmdb_cursor:
-	if key == options.key:
+	if key == options.key.encode():
 		print(f'Extracting image: {key.decode()} to {options.output_jpeg}')
 		with open(options.output_jpeg, 'w') as of:
-			of.write(value)
+			of.write(value.decode())
 			found_it = True
 		break
 
