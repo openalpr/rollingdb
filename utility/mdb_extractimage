@@ -18,8 +18,8 @@ found_it = False
 for key, value in lmdb_cursor:
 	if key == options.key.encode():
 		print(f'Extracting image: {key.decode()} to {options.output_jpeg}')
-		with open(options.output_jpeg, 'w') as of:
-			of.write(value.decode())
+		with open(options.output_jpeg, 'wb') as of:
+			of.write(value)
 			found_it = True
 		break
 
