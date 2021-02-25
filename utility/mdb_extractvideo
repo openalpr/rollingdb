@@ -1,0 +1,72 @@
+#!/usr/bin/env python3
+
+import lmdb
+import os
+import sys
+from argparse import ArgumentParser
+
+parser = ArgumentParser(description='Extract video clips from LMDB database')
+parser.add_argument('lmdb_file', type=str, help='Target LMDB file' )
+parser.add_argument('-c', '--combine', action='store_true', help='Join all extracted clips into a single .mp4 file')
+parser.add_argument('-l', '--limit', type=int, help='Only extract the first N video clips')
+parser.add_argument('-m', '--mp4_box_path', type=str, help='Path to MP4Box executable (required if using --combine)')
+parser.add_argument('-t', '--temp_folder', type=str, required=True, help='Temporary folder to store extracted videos')
+options = parser.parse_args()
+
+# Validate paths
+if not os.path.isdir(options.temp_folder):
+    os.makedirs(options.temp_folder)
+
+if options.combine:
+    if options.mp4_box_path is None:
+        print(f'Error --mp4_box_path is required for --combine')
+        sys.exit(1)
+    elif not os.path.isfile(options.mp4_box_path):
+        print(f'Error MP4Box executable not found at {options.mp4_box_path}')
+        sys.exit(1)
+
+# Initialize LMDB connection
+lmdb_file = options.lmdb_file
+lmdb_env = lmdb.open(lmdb_file, subdir=False, readonly=True, lock=False)
+lmdb_txn = lmdb_env.begin()
+lmdb_cursor = lmdb_txn.cursor()
+
+# Loop over keys and extract video content
+mp4_files = []
+print(f'Saving clips in {options.temp_folder}')
+for key, value in lmdb_cursor:
+
+    key = key.decode('utf-8')
+    if 'meta~' not in key:
+        out_file = os.path.join(options.temp_folder, key + '.mp4')
+        print(f'Extracting {key}')
+        mp4_files.append(out_file)
+        with open(out_file, 'wb') as of:
+            of.write(value)
+
+    if options.limit is not None and len(mp4_files) >= options.limit:
+        print(f'Reached limit of {options.limit:,} video clips, stopping iteration')
+        break
+
+if options.combine:
+
+    # Combine all temp clips into a single video
+    lmdb_file_alone = os.path.basename(options.lmdb_file)
+    lmdb_file_without_ext = lmdb_file_alone.split('.')[0]
+    video_out = lmdb_file_without_ext + '.mp4'
+
+    mp4_command = f'{options.mp4_box_path} -add {mp4_files[0]} '
+    for mp4_file in mp4_files[1:]:
+        mp4_command += '-cat ' + mp4_file + ' '
+    mp4_command += video_out
+
+    print(f'Collapsing videos into single video file: {video_out}')
+    print(f'Running command: {mp4_command}')
+    os.system(mp4_command)
+
+    # Delete temporary files
+    for mp4_file in mp4_files:
+        if os.path.isfile(mp4_file):
+            os.remove(mp4_file)
+else:
+    print(f'Individual clips available in {options.temp_folder}')
